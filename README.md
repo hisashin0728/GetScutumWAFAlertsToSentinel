@@ -36,4 +36,90 @@
 # 事前準備
 - 本テンプレートはカスタムログ / Azure Monitor Log Ingestion API を用いるため、事前に Log Analytics 側にカスタムテーブルの作成、DCE (データ収集エンドポイント) / DCR (データ収集ルール)が必要です。
 
+## 1.カスタムテーブル (ScutumWAF_CL) の作成
+Scutum WAF アラートを格納するため、専用のカスタムテーブルを作成します。GUI でも作成可能ですが、以下 Powershell での作成例です。
+
+```powershell
+$tableParams = @'
+{
+    "properties": {
+        "schema": {
+            "name": "ScutumWAF_CL",
+            "columns": [
+                {
+                    "name": "TimeGenerated",
+                    "type": "datetime",
+                    "description": "The time at which the data was generated"
+                },
+                {
+                    "name": "log_id",
+                    "type": "string",
+                    "description": "Scutum WAF Alert log_id"
+                },
+                {
+                    "name": "ip",
+                    "type": "string",
+                    "description": "Scutum WAF Request source IP Address"
+                },
+                {
+                    "name": "block",
+                    "type": "boolean",
+                    "description": "Scutum WAF block status"
+                },
+                {
+                    "name": "category",
+                    "type": "string",
+                    "description": "Scutum WAF attack category"
+                },
+                {
+                    "name": "uri",
+                    "type": "string",
+                    "description": "Scutum WAF request URI"
+                },
+                {
+                    "name": "host",
+                    "type": "string",
+                    "description": "Scutum WAF host"
+                },
+                {
+                    "name": "ts2",
+                    "type": "Datetime",
+                    "description": "Scutum WAF timestamp"
+                },
+                {
+                    "name": "request",
+                    "type": "string",
+                    "description": "Scutum WAF HTTP request data"
+                },
+                {
+                    "name": "response",
+                    "type": "string",
+                    "description": "Scutum WAF HTTP response data"
+                }
+                ]
+        }
+    }
+}
+'@
+
+Invoke-AzRestMethod -Path "/subscriptions/<SubscriptionId>/resourcegroups/<リソースグループ名>/providers/microsoft.operationalinsights/workspaces/<LogAnalytics名>/tables/ScutumWAF_CL?api-version=2022-10-01" -Method PUT -payload $tableParams
+```
+- 各フィールドの意図は以下の通りです。
+
+| Field Name | 説明
+| --- | --- |
+| TimeGenerated | ログインジェスチョン時間 (Default) |
+| log_id | Scutum WAF Log ID |
+| block | Scutum WAF 防御/検知判定 |
+| category | Scutum WAF 検知カテゴリ |
+| uri | Scutum WAF 検知 URI |
+| host | Scutum WAF API 発行対象の FQDN ホスト |
+| ts2 | Scutum WAF 検知時間 (JST) |
+| request | Scutum WAF HTTP リクエスト情報 (API ``alert_detail`` で取得可能) |
+| response | Scutum WAF HTTP レスポンス情報 (API ``alert_detail`` で取得可能) |
+
+## 2. Azure Monitor DCE (データ収集エンドポイント) の作成
+Azure Monitor Log Ingestion API() を用いるため、データ収集ルールを作成します。
+
+
 
