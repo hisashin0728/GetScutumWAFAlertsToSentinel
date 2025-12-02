@@ -1,0 +1,122 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-08-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "dataCollectionRuleName": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the name of the Data Collection Rule to create."
+            }
+        },
+        "workspaceResourceId": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the Azure resource ID of the Log Analytics workspace to use."
+            }
+        },
+        "endpointResourceId": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the Azure resource ID of the Data Collection Endpoint to use."
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Insights/dataCollectionRules",
+            "name": "[parameters('dataCollectionRuleName')]",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2023-03-11",
+            "kind": "Direct",
+            "properties": {
+                "dataCollectionEndpointId": "[parameters('endpointResourceId')]",
+                "streamDeclarations": {
+                    "Custom-MyTable": {
+                        "columns": [
+                            {
+                                "name": "TimeGenerated",
+                                "type": "datetime",
+                                "description": "The time at which the data was generated"
+                            },
+                            {
+                                "name": "log_id",
+                                "type": "string",
+                                "description": "Scutum WAF Alert log_id"
+                            },
+                            {
+                                "name": "ip",
+                                "type": "string",
+                                "description": "Scutum WAF Request source IP Address"
+                            },
+                            {
+                                "name": "block",
+                                "type": "boolean",
+                                "description": "Scutum WAF block status"
+                            },
+                            {
+                                "name": "category",
+                                "type": "string",
+                                "description": "Scutum WAF attack category"
+                            },
+                            {
+                                "name": "uri",
+                                "type": "string",
+                                "description": "Scutum WAF request URI"
+                            },
+                            {
+                                "name": "host",
+                                "type": "string",
+                                "description": "Scutum WAF host"
+                            },
+                            {
+                                "name": "ts",
+                                "type": "string",
+                               "description": "Scutum WAF timestamp"
+                            },
+                            {
+                                "name": "ts2",
+                                "type": "datetime",
+                               "description": "Scutum WAF datetime"
+                            },
+                            {
+                                "name": "request",
+                                "type": "string",
+                               "description": "Scutum WAF HTTP request data"
+                            },
+                            {
+                                "name": "response",
+                                "type": "string",
+                               "description": "Scutum WAF HTTP response data"
+                            }
+                        ]
+                    }
+                },
+                "destinations": {
+                    "logAnalytics": [
+                        {
+                            "workspaceResourceId": "[parameters('workspaceResourceId')]",
+                            "name": "myworkspace"
+                        }
+                    ]
+                },
+                "dataFlows": [
+                    {
+                        "streams": [
+                            "Custom-MyTable"
+                        ],
+                        "destinations": [
+                            "myworkspace"
+                        ],
+                        "outputStream": "Custom-ScutumWAF_CL"
+                    }
+                ]
+            }
+        }
+    ],
+    "outputs": {
+        "dataCollectionRuleId": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dataCollectionRuleName'))]"
+        }
+    }
+}
