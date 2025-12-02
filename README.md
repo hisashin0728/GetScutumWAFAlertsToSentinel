@@ -1,5 +1,6 @@
 # GetScutumWAFAlertsToSentinel
 このレポジトリは Scutum WAF を API で取得して、Microsoft Sentinel に Azure Monitor Log IngestionAPI で送信するテンプレートを公開しています。
+<img width="986" height="358" alt="image" src="https://github.com/user-attachments/assets/368ba6f7-5060-4b6b-8676-e7981841edd1" />
 
 # テンプレート説明
 
@@ -122,6 +123,7 @@ Invoke-AzRestMethod -Path "/subscriptions/<SubscriptionId>/resourcegroups/<リ�
 
 ## 4. Logic Apps テンプレート導入
 - 以下から Deploy to Azure でデプロイを行って下さい。
+
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fhisashin0728%2FGetScutumWAFAlertsToSentinel%2Frefs%2Fheads%2Fmain%2FScutumWafDetail.json)
 
 - 本テンプレートは導入時にパラメータを指定します
@@ -139,8 +141,14 @@ Invoke-AzRestMethod -Path "/subscriptions/<SubscriptionId>/resourcegroups/<リ�
  - ただし、ロジックアプリの Run history 上では、パラメータが埋め込まれて動作するログが確認できるため、設定した情報は閲覧が出来るようになっています
  - 秘匿情報として扱いたい場合は、エンコードなどを検討して下さい
 
+# 注意事項
+- Scutum API の制約にて 25回/5分の同一API認証ソースによる limit 制限が（429 エラー）
+- 本テンプレートはポーリング間隔を短くすることで、個々の Scutum WAF のアラート情報に対して ``/api/alertdetail`` を叩ける前提で作成しています
 
-
+# 免責事項
+- 本レポジトリによって発生するコストについては、利用するユーザーが責任を負います
+- 本レポジトリの演習によって作成される環境から出力される内容について、作成者は責任を負いません
+- 本レポジトリはオープンソースです
 
 
 
