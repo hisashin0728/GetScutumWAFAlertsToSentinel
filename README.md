@@ -17,22 +17,6 @@
     - ``HTTP Request``/ ``HTTP Response`` を取得します
   - 最後にデータを成型して Azure Monitor DCR に API で転送します
 
-# テンプレート導入時のパラメータ
-- 本テンプレートは導入時にパラメータを指定します
-
-| Parameter Name | 説明 | 例 |
-| --- | --- | --- |
-| Play Book Name | Logic Apps テンプレート名 | ``ScutumWAFSentinelDetail`` |
-| Scutum Api Key | Scutum WAF の API キー | ``xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`` |
-| Scutum User Id | Scutum WAF の ユーザー ID | ``XXXXXXXX`` |
-| Scutum Host Fqdn | Scutum WAF のホスト FQDN | ``www.xxx.co.jp`` |
-| Dce Ingest Url | Azure Monitor DCE (データ収集エンドポイント) URL | ``https://dce-xxxxx.ingest.monitor.azure.com`` |
-| Dcr Immutable Id | Azure Monitor DCR (データ収集ルール) Id | ``dcr-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`` |
-
-- Scutum Api Key / UserId / Host FQDN については、Logic Apps テンプレートの Secret String として保存されるため、導入後テンプレートには表示されません
- - ただし、ロジックアプリの Run history 上では、パラメータが埋め込まれて動作するログが確認できるため、設定した情報は閲覧が出来るようになっています
- - 秘匿情報として扱いたい場合は、エンコードなどを検討して下さい
-
 # 事前準備
 - 本テンプレートはカスタムログ / Azure Monitor Log Ingestion API を用いるため、事前に Log Analytics 側にカスタムテーブルの作成、DCE (データ収集エンドポイント) / DCR (データ収集ルール)が必要です。
 
@@ -119,6 +103,10 @@ Invoke-AzRestMethod -Path "/subscriptions/<SubscriptionId>/resourcegroups/<リ�
 | response | Scutum WAF HTTP レスポンス情報 (API ``alert_detail`` で取得可能) |
 
 ## 2. Azure Monitor DCE (データ収集エンドポイント) の作成
+- Azure Monitor DCE (Data Collection Endpoint) を Azure Portal から作成します
+- 作成されたらリソース ID を後の DCR 作成時にパラメータとして適用するので控えてください。
+
+## 3. Azure Monitor DCR (データ収集ルール) の作成
 - [Azure Monitor Log Ingestion API](https://learn.microsoft.com/ja-jp/azure/azure-monitor/logs/logs-ingestion-api-overview) を用いるため、データ収集ルールを作成します
 - Log Ingestion API を想定した DCR 作成は Azure GUI では作成出来ないため、MS Learn の手順に従って ARM テンプレートで作成します。
 
@@ -132,6 +120,24 @@ Invoke-AzRestMethod -Path "/subscriptions/<SubscriptionId>/resourcegroups/<リ�
 | Workspace Resource Id | ターゲットの Log Analytics ワークスペースのリソースID | ``/subscriptions/<YourSubscription>/resourcegroups/<YourResourceGroup>/providers/microsoft.operationalinsights/workspaces/<YourWorkSpaceName>`` |
 | Endpoint Resource Id | データ収集エンドポイント(DCE) リソースID | ``/subscriptions/<YourSubscription>/resourceGroups/<YourResourceGroup>/providers/Microsoft.Insights/dataCollectionEndpoints/<YourDceName>`` |
 
+## 4. Logic Apps テンプレート導入
+- 以下から Deploy to Azure でデプロイを行って下さい。
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fhisashin0728%2FGetScutumWAFAlertsToSentinel%2Frefs%2Fheads%2Fmain%2FScutumWafDetail.json)
+
+- 本テンプレートは導入時にパラメータを指定します
+
+| Parameter Name | 説明 | 例 |
+| --- | --- | --- |
+| Play Book Name | Logic Apps テンプレート名 | ``ScutumWAFSentinelDetail`` |
+| Scutum Api Key | Scutum WAF の API キー | ``xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`` |
+| Scutum User Id | Scutum WAF の ユーザー ID | ``XXXXXXXX`` |
+| Scutum Host Fqdn | Scutum WAF のホスト FQDN | ``www.xxx.co.jp`` |
+| Dce Ingest Url | Azure Monitor DCE (データ収集エンドポイント) URL | ``https://dce-xxxxx.ingest.monitor.azure.com`` |
+| Dcr Immutable Id | Azure Monitor DCR (データ収集ルール) Id | ``dcr-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`` |
+
+- Scutum Api Key / UserId / Host FQDN については、Logic Apps テンプレートの Secret String として保存されるため、導入後テンプレートには表示されません
+ - ただし、ロジックアプリの Run history 上では、パラメータが埋め込まれて動作するログが確認できるため、設定した情報は閲覧が出来るようになっています
+ - 秘匿情報として扱いたい場合は、エンコードなどを検討して下さい
 
 
 
