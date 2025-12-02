@@ -124,6 +124,16 @@ Invoke-AzRestMethod -Path "/subscriptions/<SubscriptionId>/resourcegroups/<リ�
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fhisashin0728%2FGetScutumWAFAlertsToSentinel%2Frefs%2Fheads%2Fmain%2FScutumWAF_dcr.json)
 
+- DCR 作成用の ARM テンプレートのパラメータは以下の通りです。
+
+| Parameter | 説明 | 例 |
+| --- | --- | --- |
+| Data Collection Rule Name | データ収集ルール (DCR) 名 | ``dcr-xxxx`` |
+| Workspace Resource Id | ターゲットの Log Analytics ワークスペースのリソースID | ``/subscriptions/<YourSubscription>/resourcegroups/<YourResourceGroup>/providers/microsoft.operationalinsights/workspaces/<YourWorkSpaceName>`` |
+| Endpoint Resource Id | データ収集エンドポイント(DCE) リソースID | ``/subscriptions/<YourSubscription>/resourceGroups/<YourResourceGroup>/providers/Microsoft.Insights/dataCollectionEndpoints/<YourDceName>`` |
+
+
+
 
 
 
