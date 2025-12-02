@@ -122,6 +122,8 @@ Invoke-AzRestMethod -Path "/subscriptions/<SubscriptionId>/resourcegroups/<リ�
 - [Azure Monitor Log Ingestion API](https://learn.microsoft.com/ja-jp/azure/azure-monitor/logs/logs-ingestion-api-overview) を用いるため、データ収集ルールを作成します
 - Log Ingestion API を想定した DCR 作成は Azure GUI では作成出来ないため、MS Learn の手順に従って ARM テンプレートで作成します。
 
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fhisashin0728%2FGetScutumWAFAlertsToSentinel%2Frefs%2Fheads%2Fmain%2FScutumWAF_dcr.json)
+
 
 
 
