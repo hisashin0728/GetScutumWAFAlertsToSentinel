@@ -119,7 +119,11 @@ Invoke-AzRestMethod -Path "/subscriptions/<SubscriptionId>/resourcegroups/<リ�
 | response | Scutum WAF HTTP レスポンス情報 (API ``alert_detail`` で取得可能) |
 
 ## 2. Azure Monitor DCE (データ収集エンドポイント) の作成
-Azure Monitor Log Ingestion API() を用いるため、データ収集ルールを作成します。
+- [Azure Monitor Log Ingestion API](https://learn.microsoft.com/ja-jp/azure/azure-monitor/logs/logs-ingestion-api-overview) を用いるため、データ収集ルールを作成します
+- Log Ingestion API を想定した DCR 作成は Azure GUI では作成出来ないため、MS Learn の手順に従って ARM テンプレートで作成します。
+
+
+
 
 
 
