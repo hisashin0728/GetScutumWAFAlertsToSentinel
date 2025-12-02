@@ -1,0 +1,436 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "metadata": {
+        "title": "ScutumWAFSentinelDetail",
+        "description": "This playbook try polling Scutum WAF alert details and send to Azure Sentinel via AMA DCR.",
+        "lastUpdateTime": "2025-11-27T00:00:00.000Z",
+        "tags": [ "Security" ],
+        "author": {
+            "name": "Hisashi Nakada"
+        }
+    },
+    "parameters": {
+        "PlayBookName": {
+            "defaultValue": "ScutumWAFSentinelDetail",
+            "type": "String"
+        },
+        "ScutumApiKey": {
+            "defaultValue": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "type": "String"
+        },
+        "ScutumUserId": {
+            "defaultValue": "GEYXXXX",
+            "type": "String"
+        },
+        "ScutumHostFqdn": {
+            "defaultValue": "www.xxx.co.jp",
+            "type": "String"
+        },
+        "DceIngestUrl": {
+            "defaultValue": "https://dce-xxxxx.ingest.monitor.azure.com",
+            "type": "String"
+        },
+        "DcrImmutableId": {
+            "defaultValue": "dcr-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "[parameters('PlayBookName')]",
+            "location": "[resourceGroup().location]",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "state": "Disabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "ApiKey": {
+                            "type": "SecureString"
+                        },
+                        "UserId": {
+                            "type": "SecureString"
+                        },
+                        "HostFqdn": {
+                            "type": "SecureString"
+                        },
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        }
+                    },
+                    "triggers": {
+                        "Recurrence": {
+                            "recurrence": {
+                                "interval": 1,
+                                "frequency": "Hour",
+                                "timeZone": "Tokyo Standard Time"
+                            },
+                            "evaluatedRecurrence": {
+                                "interval": 1,
+                                "frequency": "Hour",
+                                "timeZone": "Tokyo Standard Time"
+                            },
+                            "type": "Recurrence"
+                        }
+                    },
+                    "actions": {
+                        "Current_time": {
+                            "runAfter": {},
+                            "type": "Expression",
+                            "kind": "CurrentTime",
+                            "inputs": {}
+                        },
+                        "CurrentTimeJST": {
+                            "runAfter": {
+                                "Current_time": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Expression",
+                            "kind": "ConvertTimeZone",
+                            "inputs": {
+                                "baseTime": "@body('Current_time')",
+                                "sourceTimeZone": "UTC",
+                                "destinationTimeZone": "Tokyo Standard Time",
+                                "formatString": "yyyy-MM-ddTHH:mm:ss+09:00"
+                            }
+                        },
+                        "Get_past_time": {
+                            "runAfter": {
+                                "CurrentTimeJST": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Expression",
+                            "kind": "GetPastTime",
+                            "inputs": {
+                                "interval": 1,
+                                "timeUnit": "Hour"
+                            }
+                        },
+                        "PastTimeJST": {
+                            "runAfter": {
+                                "Get_past_time": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Expression",
+                            "kind": "ConvertTimeZone",
+                            "inputs": {
+                                "baseTime": "@body('Get_past_time')",
+                                "sourceTimeZone": "UTC",
+                                "destinationTimeZone": "Tokyo Standard Time",
+                                "formatString": "yyyy-MM-ddTHH:mm:ss+09:00"
+                            }
+                        },
+                        "Until": {
+                            "actions": {
+                                "HTTP-Rest-ScutumAlertList": {
+                                    "type": "Http",
+                                    "inputs": {
+                                        "uri": "https://api.scutum.jp/api/v1/alert?@{variables('URI')}",
+                                        "method": "GET",
+                                        "headers": {
+                                            "Host": "api.scutum.jp",
+                                            "X-Scutum-API-Key": "@{parameters('ApiKey')}",
+                                            "Accept": "application/json"
+                                        },
+                                        "retryPolicy": {
+                                            "type": "fixed",
+                                            "count": 3,
+                                            "interval": "PT5M"
+                                        }
+                                    },
+                                    "runtimeConfiguration": {
+                                        "contentTransfer": {
+                                            "transferMode": "Chunked"
+                                        }
+                                    }
+                                },
+                                "ParseJsonAlert": {
+                                    "runAfter": {
+                                        "HTTP-Rest-ScutumAlertList": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "ParseJson",
+                                    "inputs": {
+                                        "content": "@body('HTTP-Rest-ScutumAlertList')",
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "next_marker": {
+                                                    "type": "string"
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "log_id": {
+                                                                "type": "string"
+                                                            },
+                                                            "ip": {
+                                                                "type": "string"
+                                                            },
+                                                            "block": {
+                                                                "type": "boolean"
+                                                            },
+                                                            "category": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "uri": {
+                                                                "type": "string"
+                                                            },
+                                                            "ts": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "count": {
+                                                    "type": "integer"
+                                                },
+                                                "truncated": {
+                                                    "type": "boolean"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "CheckScutumAlertCount": {
+                                    "actions": {
+                                        "For_each": {
+                                            "foreach": "@outputs('ParseJsonAlert')?['body']?['data']",
+                                            "actions": {
+                                                "HTTP-Rest-ScutumAlertDetail": {
+                                                    "type": "Http",
+                                                    "inputs": {
+                                                        "uri": "https://api.scutum.jp/api/v1/alert_detail?host=@{encodeUriComponent(parameters('HostFqdn'))}&id=@{encodeUriComponent(parameters('UserId'))}&&log_id=@{items('For_each')?['log_id']}",
+                                                        "method": "GET",
+                                                        "headers": {
+                                                            "Host": "api.scutum.jp",
+                                                            "X-Scutum-API-Key": "@{parameters('ApiKey')}",
+                                                            "Accept": "application/json"
+                                                        },
+                                                        "retryPolicy": {
+                                                            "type": "fixed",
+                                                            "count": 3,
+                                                            "interval": "PT5M"
+                                                        }
+                                                    },
+                                                    "runtimeConfiguration": {
+                                                        "contentTransfer": {
+                                                            "transferMode": "Chunked"
+                                                        }
+                                                    }
+                                                },
+                                                "ParseJsonAlertDetail": {
+                                                    "runAfter": {
+                                                        "HTTP-Rest-ScutumAlertDetail": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "ParseJson",
+                                                    "inputs": {
+                                                        "content": "@body('HTTP-Rest-ScutumAlertDetail')",
+                                                        "schema": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "log_id": {
+                                                                    "type": "string"
+                                                                },
+                                                                "request": {
+                                                                    "type": "string"
+                                                                },
+                                                                "response": {
+                                                                    "type": "string"
+                                                                },
+                                                                "ip": {
+                                                                    "type": "string"
+                                                                },
+                                                                "block": {
+                                                                    "type": "boolean"
+                                                                },
+                                                                "category": {
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                        "type": "string"
+                                                                    }
+                                                                },
+                                                                "uri": {
+                                                                    "type": "string"
+                                                                },
+                                                                "ts": {
+                                                                    "type": "string"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "AppendWafDataArray": {
+                                                    "runAfter": {
+                                                        "ParseJsonAlertDetail": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "AppendToArrayVariable",
+                                                    "inputs": {
+                                                        "name": "WafDataArray",
+                                                        "value": {
+                                                            "log_id": "@{body('ParseJsonAlertDetail')?['log_id']}",
+                                                            "ip": "@{body('ParseJsonAlertDetail')?['ip']}",
+                                                            "block": "@body('ParseJsonAlertDetail')?['block']",
+                                                            "category": "@body('ParseJsonAlertDetail')?['category']",
+                                                            "uri": "@{body('ParseJsonAlertDetail')?['uri']}",
+                                                            "ts2": "@{body('ParseJsonAlertDetail')?['ts']}",
+                                                            "host": "@{parameters('HostFqdn')}",
+                                                            "request": "@{body('ParseJsonAlertDetail')?['request']}",
+                                                            "response": "@{body('ParseJsonAlertDetail')?['response']}"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "type": "Foreach"
+                                        },
+                                        "HTTP-Rest-AmaDcr": {
+                                            "runAfter": {
+                                                "For_each": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http",
+                                            "inputs": {
+                                                "uri": "[concat(parameters('DceIngestUrl'), '/dataCollectionRules/', parameters('DcrImmutableId'), '/streams/Custom-MyTable?api-version=2023-01-01' )]",
+                                                "method": "POST",
+                                                "headers": {
+                                                    "Content-Type": "application/json"
+                                                },
+                                                "body": "@variables('WafDataArray')",
+                                                "authentication": {
+                                                    "type": "ManagedServiceIdentity",
+                                                    "audience": "https://monitor.azure.com/"
+                                                }
+                                            },
+                                            "runtimeConfiguration": {
+                                                "contentTransfer": {
+                                                    "transferMode": "Chunked"
+                                                }
+                                            }
+                                        },
+                                        "Condition": {
+                                            "actions": {
+                                                "Set_variable": {
+                                                    "type": "SetVariable",
+                                                    "inputs": {
+                                                        "name": "URI",
+                                                        "value": "host=@{encodeUriComponent(parameters('HostFqdn'))}&id=@{encodeUriComponent(parameters('UserId'))}&time_order=asc&from=@{encodeUriComponent(body('PastTimeJST'))}&to=@{encodeUriComponent(body('CurrentTimeJST'))}&marker=@{body('ParseJsonAlert')?['next_marker']}"
+                                                    }
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "HTTP-Rest-AmaDcr": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "else": {
+                                                "actions": {}
+                                            },
+                                            "expression": {
+                                                "and": [
+                                                    {
+                                                        "equals": [
+                                                            "@body('ParseJsonAlert')?['truncated']",
+                                                            true
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            "type": "If"
+                                        }
+                                    },
+                                    "runAfter": {
+                                        "ParseJsonAlert": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else": {
+                                        "actions": {}
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "not": {
+                                                    "equals": [
+                                                        "@body('ParseJsonAlert')?['count']",
+                                                        0
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    "type": "If"
+                                }
+                            },
+                            "runAfter": {
+                                "WafDataArray": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "expression": "@not(equals(body('ParseJsonAlert')?['truncated'], true))",
+                            "limit": {
+                                "count": 10,
+                                "timeout": "PT5M"
+                            },
+                            "type": "Until"
+                        },
+                        "WafDataArray": {
+                            "runAfter": {
+                                "PastTimeJST": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "URI",
+                                        "type": "string",
+                                        "value": "host=@{encodeUriComponent(parameters('HostFqdn'))}&id=@{encodeUriComponent(parameters('UserId'))}&time_order=asc&from=@{encodeUriComponent(body('PastTimeJST'))}&to=@{encodeUriComponent(body('CurrentTimeJST'))}"
+                                    },
+                                    {
+                                        "name": "WafDataArray",
+                                        "type": "array"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "ApiKey": {
+                        "value": "[parameters('ScutumApiKey')]"
+                    },
+                    "UserId": {
+                        "value": "[parameters('ScutumUserId')]"
+                    },
+                    "HostFqdn": {
+                        "value": "[parameters('ScutumHostFqdn')]"
+                    }
+                }
+            }
+        }
+    ]
+}
