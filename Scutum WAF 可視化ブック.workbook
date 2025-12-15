@@ -1,0 +1,477 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## Scutum WAF 可視化ブック\n---\n\n本ブックは Scutum WAF (カスタムテーブル - ScutumWAF_CL) を可視化する目的で作成しています。\n月次報告などの出力、分析用にご活用下さい。\n\n| 版歴 | 更新日 | メモ |\n| --- | --- | --- |\n| 0.9 | 2025/11/12 | ドラフト版 | "
+      },
+      "name": "text - 2"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "30b6e436-b2a3-4a69-ae4e-0b34ccc428bc",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeGenerated",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 300000
+                },
+                {
+                  "durationMs": 900000
+                },
+                {
+                  "durationMs": 1800000
+                },
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 172800000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2419200000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "value": {
+              "durationMs": 86400000
+            }
+          },
+          {
+            "id": "f95a08ff-06c6-483d-9d24-e693783ba199",
+            "version": "KqlParameterItem/1.0",
+            "name": "Host",
+            "type": 2,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "ScutumWAF_CL\r\n| where host != \"\"\r\n| distinct host",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ]
+            },
+            "timeContext": {
+              "durationMs": 604800000
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "www1.hepco.co.jp"
+            ]
+          },
+          {
+            "id": "cdb3144e-9d00-4cb5-9171-f14bd717d4f8",
+            "version": "KqlParameterItem/1.0",
+            "name": "block",
+            "label": "防御モード",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "{\"version\":\"1.0.0\",\"content\":\"[\\r\\n    { \\\"value\\\":\\\"true\\\", \\\"label\\\":\\\"ブロック\\\" },\\r\\n    { \\\"value\\\":\\\"false\\\", \\\"label\\\":\\\"検知\\\" }\\r\\n]\",\"transformers\":null}",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "queryType": 8,
+            "value": [
+              "false",
+              "true"
+            ]
+          }
+        ],
+        "style": "pills",
+        "queryType": 8
+      },
+      "name": "Parameter"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "ScutumWAF_CL\r\n| where host == ({Host})\r\n| where block in ({block})\r\n| extend parsed = parse_json(category)\r\n| mv-expand data = parsed\r\n| summarize count() by tostring(data)\r\n| order by count_ desc",
+        "size": 0,
+        "title": "検知カテゴリ",
+        "timeContextFromParameter": "TimeGenerated",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "category",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "count_",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          },
+          "showBorder": false,
+          "size": "auto"
+        },
+        "graphSettings": {
+          "type": 0,
+          "topContent": {
+            "columnMatch": "category",
+            "formatter": 1
+          },
+          "centerContent": {
+            "columnMatch": "count_",
+            "formatter": 1,
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          }
+        },
+        "mapSettings": {
+          "locInfo": "LatLong",
+          "sizeSettings": "count_",
+          "sizeAggregation": "Sum",
+          "legendMetric": "count_",
+          "legendAggregation": "Sum",
+          "itemColorSettings": {
+            "type": "heatmap",
+            "colorAggregation": "Sum",
+            "nodeColorField": "count_",
+            "heatmapPalette": "greenRed"
+          }
+        }
+      },
+      "customWidth": "25",
+      "name": "category-pie"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "ScutumWAF_CL\r\n| where host != \"\"\r\n| where host in ({Host})\r\n| where block in ({block})\r\n| summarize count() by host",
+        "size": 1,
+        "title": "対象ホスト",
+        "timeContextFromParameter": "TimeGenerated",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table"
+      },
+      "customWidth": "25",
+      "name": "host-list",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "ScutumWAF_CL\r\n| where host != \"\"\r\n| where host in ({Host})\r\n| where block in ({block})\r\n| summarize count() by ip\r\n| order by count_ desc\r\n| join kind=leftouter (\r\n    ThreatIntelIndicators\r\n    | where TimeGenerated >ago(14d)\r\n    | extend ip = ObservableValue\r\n    | summarize arg_max(TimeGenerated, *) by ip\r\n    | project Confidence, ip, Data.name, Data.indicator_types\r\n    ) on ip\r\n| project-away ip1\r\n| limit 10",
+        "size": 0,
+        "title": "検知元IPアドレス",
+        "timeContextFromParameter": "TimeGenerated",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Confidence",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "max": 100,
+                "palette": "blue"
+              }
+            }
+          ],
+          "labelSettings": [
+            {
+              "columnId": "ip",
+              "label": "送信元IP"
+            },
+            {
+              "columnId": "count_",
+              "label": "数"
+            }
+          ]
+        }
+      },
+      "customWidth": "25",
+      "name": "ip-list",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "ScutumWAF_CL\r\n| where host != \"\"\r\n| where host in ({Host})\r\n| where block in ({block})\r\n| summarize count() by host,uri\r\n| order by count_ desc\r\n| limit 10",
+        "size": 0,
+        "title": "ターゲット先 uri",
+        "timeContextFromParameter": "TimeGenerated",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "labelSettings": [
+            {
+              "columnId": "count_",
+              "label": "数"
+            }
+          ]
+        }
+      },
+      "customWidth": "25",
+      "name": "uri-list",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "ScutumWAF_CL\r\n| where host != \"\" and ts2 != \"\"\r\n| where host in ({Host})\r\n| where block in ({block})\r\n| summarize count() by bin(ts2, 1h) , host",
+        "size": 0,
+        "title": "WAF サービス攻撃防御状況推移",
+        "timeContextFromParameter": "TimeGenerated",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "barchart",
+        "tileSettings": {
+          "showBorder": false,
+          "titleContent": {
+            "columnMatch": "host",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "count_",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          }
+        },
+        "chartSettings": {
+          "showMetrics": false,
+          "xSettings": {
+            "scale": "time",
+            "label": "Datetime"
+          },
+          "ySettings": {
+            "label": "Counts"
+          }
+        }
+      },
+      "name": "Host-TimeChart"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "ScutumWAF_CL\r\n| where ts2 <> \"\"\r\n| where host in ({Host})\r\n| where block in ({block})\r\n| extend ts2_parsed = todatetime(ts2)\r\n| extend WeekStart = startofweek(ts2_parsed)\r\n| summarize Count = count() by host, WeekStart\r\n| extend WeekLabel = strcat(format_datetime(WeekStart, 'yyyy/MM/dd'))\r\n| project-away WeekStart\r\n| evaluate pivot(host, sum(Count))\r\n| order by WeekLabel desc",
+        "size": 0,
+        "title": "週次の統計情報",
+        "timeContextFromParameter": "TimeGenerated",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "WeekLabel",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "20ch"
+              }
+            },
+            {
+              "columnMatch": "www1.hepco.co.jp",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "30ch"
+              }
+            },
+            {
+              "columnMatch": "_Empty",
+              "formatter": 5
+            }
+          ],
+          "sortBy": [
+            {
+              "itemKey": "WeekLabel",
+              "sortOrder": 1
+            }
+          ]
+        },
+        "sortBy": [
+          {
+            "itemKey": "WeekLabel",
+            "sortOrder": 1
+          }
+        ]
+      },
+      "name": "クエリ - 8",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "ScutumWAF_CL\r\n| where ts2 <> \"\"\r\n| where host in ({Host})\r\n| where block in ({block})\r\n| extend decodeRequest = base64_decode_tostring(request)\r\n| project ts2, host, ip, block, category, uri, decodeRequest\r\n| order by ts2 desc",
+        "size": 0,
+        "title": "ScutumWAF 攻撃状況",
+        "timeContextFromParameter": "TimeGenerated",
+        "showExportToExcel": true,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "WeekLabel",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "20ch"
+              }
+            },
+            {
+              "columnMatch": "www1.hepco.co.jp",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "30ch"
+              }
+            },
+            {
+              "columnMatch": "_Empty",
+              "formatter": 5
+            }
+          ],
+          "filter": true,
+          "labelSettings": [
+            {
+              "columnId": "ts2",
+              "label": "時刻"
+            },
+            {
+              "columnId": "host",
+              "label": "ホスト"
+            },
+            {
+              "columnId": "ip",
+              "label": "送信元IP"
+            },
+            {
+              "columnId": "category",
+              "label": "カテゴリ"
+            },
+            {
+              "columnId": "uri",
+              "label": "URI"
+            },
+            {
+              "columnId": "decodeRequest",
+              "label": "HTTPリクエスト"
+            }
+          ]
+        },
+        "sortBy": []
+      },
+      "name": "ScutumWAFDetail",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "ScutumWAF_CL\r\n| where host != \"\"\r\n| where host in ({Host})\r\n| where block in ({block})\r\n| extend geo = tostring((geo_info_from_ip_address(ip)).country)\r\n| summarize count() by geo\r\n| order by count_ desc",
+        "size": 2,
+        "title": "攻撃元IP情報",
+        "timeContextFromParameter": "TimeGenerated",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "map",
+        "mapSettings": {
+          "locInfo": "CountryRegion",
+          "locInfoColumn": "geo",
+          "sizeSettings": "count_",
+          "sizeAggregation": "Sum",
+          "legendMetric": "count_",
+          "legendAggregation": "Sum",
+          "itemColorSettings": {
+            "nodeColorField": "count_",
+            "colorAggregation": "Sum",
+            "type": "heatmap",
+            "heatmapPalette": "greenRed"
+          }
+        }
+      },
+      "name": "GeoMapIp"
+    }
+  ],
+  "fallbackResourceIds": [
+    "/subscriptions/3e4358ef-317d-47c8-84ad-0845ffdab0b8/resourcegroups/rg-mgmt-sentinel-ae/providers/microsoft.operationalinsights/workspaces/law-mgmt-sentinel-ae"
+  ],
+  "fromTemplateId": "sentinel-UserWorkbook",
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
